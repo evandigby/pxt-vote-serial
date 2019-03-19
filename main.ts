@@ -15,6 +15,46 @@
 const deadPing = 20000;
 const lostPing = 10000;
 
+
+//% color="#abcdef"
+namespace ClassPoll {
+    /**
+     * This is a statement block
+     */
+    //% block
+    export function ForeverForTeacher() {
+        const now = input.runningTime();
+        for (const client of clients) {
+            // lost signal starts blinking
+            const lastPing = now - client.ping;
+            if (lastPing > deadPing) {
+                client.sprite.setBlink(0);
+                client.sprite.setBrightness(0);
+            }
+            else if (lastPing > lostPing)
+                client.sprite.setBlink(500);
+            else
+                client.sprite.setBlink(0);
+        }
+        basic.pause(500);
+    }
+    
+    /**
+     * This is a statement block
+     */
+    //% block
+    export function onReceivedNumber(receivedNumber: number) {
+        const serialNumber = radio.receivedPacket(RadioPacketProperty.SerialNumber);
+        const client = getClient(serialNumber);
+        if (!client)
+            return;
+    
+        client.ping = input.runningTime();
+        client.sprite.setBrightness(Math.max(1, receivedNumber & 0xff));
+        radio.writeReceivedPacketToSerial();
+    }
+}
+
 interface Client {
     // client serial id
     id: number;
@@ -47,36 +87,6 @@ function getClient(id: number): Client {
     clients.push(client);
     return client;
 }
-
-// store data received by clients
-radio.onReceivedNumber(function (receivedNumber) {
-    const serialNumber = radio.receivedPacket(RadioPacketProperty.SerialNumber)
-    const client = getClient(serialNumber);
-    if (!client)
-        return;
-
-    client.ping = input.runningTime()
-    client.sprite.setBrightness(Math.max(1, receivedNumber & 0xff));
-    radio.writeReceivedPacketToSerial();
-})
-
-// monitor the sprites and start blinking when no packet is received
-basic.forever(() => {
-    const now = input.runningTime()
-    for (const client of clients) {
-        // lost signal starts blinking
-        const lastPing = now - client.ping;
-        if (lastPing > deadPing) {
-            client.sprite.setBlink(0)
-            client.sprite.setBrightness(0)
-        }
-        else if (lastPing > lostPing)
-            client.sprite.setBlink(500);
-        else
-            client.sprite.setBlink(0);
-    }
-    basic.pause(500)
-})
 
 // setup the radio and start!
 radio.setGroup(4)
